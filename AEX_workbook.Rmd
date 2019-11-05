@@ -1,0 +1,90 @@
+---
+title: "R Notebook"
+output: html_notebook
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{r}
+library(tidyverse)
+library(rvest)
+```
+
+
+```{r}
+aex <- read_html("https://finance.yahoo.com/quote/%5EAEX/components/")
+
+aex <- aex %>% 
+  html_nodes("table") %>% 
+  html_table()
+
+aex <- aex[[1]]
+
+names(aex) <- tolower(names(aex))
+names(aex) <- sub(" ","_", names(aex))
+
+names(aex)[5] <- "percent_change"
+
+aex$percent_change <- parse_number(aex$percent_change)
+aex$volume <- parse_number(aex$volume)
+
+```
+
+
+```{r}
+company_info <- read_html("https://en.wikipedia.org/wiki/AEX_index")
+
+company_info <- company_info  %>% 
+  html_nodes("table") %>% 
+  html_table(fill=TRUE)
+
+company_info <- company_info[[2]]
+
+names(company_info) <- tolower
+
+```
+
+
+
+
+```{r, fig.width=15, fig.height=5}
+ggplot(aex)+
+  geom_bar(aes(x=symbol, y=volume, fill=symbol), stat="identity")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
