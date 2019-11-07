@@ -11,6 +11,8 @@ library(rvest)
 library(treemap)
 library(treemapify)
 library(d3treeR)
+library(quantmod)
+library(dygraphs)
 
 date_converter <- function(date) {
   months <- c("January","February","March","April","May","June","July","August","September", "October","November","December")
@@ -77,8 +79,8 @@ tree1<- treemap(
   type="value",
   fun.aggregate="weighted.mean",
   palette =c("#590000","#b50a00","white","#00ba0c", "#035900"),
-  range=c(-5, 5),
-  mapping=c(-5, 0, 5)
+  mapping=c(-5, 0, 5),
+  position.legend ="none"
   
 )
 ```
@@ -117,7 +119,7 @@ style_widget <- function(hw=NULL, style="", addl_selector="") {
 
 ```{r}
 style_widget(
-  d3tree3(tree1, rootname = paste("S&P500", date_converter(Sys.Date()))),
+  d3tree3(tree1, rootname = paste("AEX Index Amsterdam - ", date_converter(Sys.Date()))),
   addl_selector="text",
   style="font-family:Ubuntu; font-size:15px;"
 )
@@ -171,8 +173,19 @@ ggplot(data=aex,
 
 
 
+```{r}
+getSymbols('^AEX')
+chartSeries(AEX)
+```
 
 
+```{r}
+options(scipen=999)
+
+dygraph(AEX, main="AEX") %>%
+  dyRangeSelector() %>%
+  dyCandlestick()
+```
 
 
 
