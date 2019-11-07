@@ -13,6 +13,7 @@ library(treemapify)
 library(d3treeR)
 library(quantmod)
 library(dygraphs)
+library(DT)
 
 date_converter <- function(date) {
   months <- c("January","February","March","April","May","June","July","August","September", "October","November","December")
@@ -184,7 +185,9 @@ options(scipen=999)
 
 dygraph(AEX, main="AEX") %>%
   dyRangeSelector() %>%
-  dyCandlestick()
+  dyCandlestick() %>% 
+  dySeries("AEX.Close", axis = 'y2', stepPlot = TRUE) %>% 
+  dyHighlight(highlightCircleSize = 5, highlightSeriesBackgroundAlpha = 0.3)
 ```
 
 
