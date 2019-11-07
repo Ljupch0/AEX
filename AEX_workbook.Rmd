@@ -8,6 +8,15 @@ editor_options:
 ```{r}
 library(tidyverse)
 library(rvest)
+library(treemap)
+library(treemapify)
+library(d3treeR)
+
+date_converter <- function(date) {
+  months <- c("January","February","March","April","May","June","July","August","September", "October","November","December")
+  converted_date <- paste(months[as.numeric(substring(date, 6, 7))],paste0(substring(date, 9, 10),","), substring(date,1,4))
+  return(converted_date)
+}
 ```
 
 
@@ -22,6 +31,7 @@ aex <- aex[[1]]
 
 names(aex) <- tolower(names(aex))
 names(aex) <- sub(" ","_", names(aex))
+aex$symbol <- sub(".AS", "", aex$symbol)
 
 names(aex)[5] <- "percent_change"
 
@@ -29,6 +39,7 @@ aex$percent_change <- parse_number(aex$percent_change)
 aex$volume <- parse_number(aex$volume)
 
 ```
+
 
 
 ```{r}
@@ -40,23 +51,119 @@ company_info <- company_info  %>%
 
 company_info <- company_info[[2]]
 
-names(company_info) <- tolower
+names(company_info) <- tolower(names(company_info))
+names(company_info) <- sub(" ","_", names(company_info))
+company_info <- rename(company_info, index_weighting = `index_weighting (%)`, symbol = ticker_symbol)
+company_info <- company_info %>% 
+  select(-company)
+
+company_info<- company_info %>% 
+  mutate(names_size=ifelse(index_weighting<2.5,"Small Cap",symbol))
+
+
+aex <- left_join(aex, company_info, by="symbol")
+rm(company_info)
+
+```
+
+
+Make color scheme with -100, +200 limit.
+```{r}
+tree1<- treemap(
+  dtf= aex,
+  index =c("names_size","symbol"),
+  vSize="index_weighting",
+  vColor="percent_change",
+  type="value",
+  fun.aggregate="weighted.mean",
+  palette =c("#590000","#b50a00","white","#00ba0c", "#035900"),
+  range=c(-5, 5),
+  mapping=c(-5, 0, 5)
+  
+)
+```
+
+
+```{r}
+style_widget <- function(hw=NULL, style="", addl_selector="") {
+  stopifnot(!is.null(hw), inherits(hw, "htmlwidget"))
+  
+  # use current id of htmlwidget if already specified
+  elementId <- hw$elementId
+  if(is.null(elementId)) {
+    # borrow htmlwidgets unique id creator
+    elementId <- sprintf(
+      'htmlwidget-%s',
+      htmlwidgets:::createWidgetId()
+    )
+    hw$elementId <- elementId
+  }
+  
+  htmlwidgets::prependContent(
+    hw,
+    htmltools::tags$style(
+      sprintf(
+        "#%s %s {%s}",
+        elementId,
+        addl_selector,
+        style
+      )
+    )
+  )
+}
+
+```
+
+
+```{r}
+style_widget(
+  d3tree3(tree1, rootname = paste("S&P500", date_converter(Sys.Date()))),
+  addl_selector="text",
+  style="font-family:Ubuntu; font-size:15px;"
+)
 
 ```
 
 
 
 
-```{r, fig.width=15, fig.height=5}
-ggplot(aex)+
-  geom_bar(aes(x=symbol, y=volume, fill=symbol), stat="identity")
+
+
+
+
+
+
+
+
+
+
+
+```{r fig.width=12, fig.height=8}
+
+windowsFonts(Ubuntu=windowsFont("Ubuntu"))
+
+ggplot(data=aex, 
+       mapping=aes(area=index_weighting, 
+                   fill=percent_change,
+                   family="Ubuntu")) +
+  geom_treemap()+
+  scale_fill_gradientn(colours = c(replicate(32,"#590000"),"#b50a00","white","#00ba0c", replicate(32,"#035900")), 
+                       limits = c(-99, 99),
+                       guide=FALSE)+
+  geom_treemap_text(aes(label=symbol),
+                    size=15)+
+  geom_treemap_text(aes(label=percent_change),
+                    place="bottom",
+                    size=15,
+                    padding.y = grid::unit(2, "mm"))+
+  labs(title="AEX Amsterdam Index Daily Price Change",
+       subtitle=paste("Results of the", date_converter(Sys.Date()),"trading day"),
+       caption = "Source: finance.yahoo.com
+       © Ljupcho.com")+
+  theme(plot.title = element_text(size=20, family = "Ubuntu"),
+        plot.subtitle = element_text(size=16, family = "Ubuntu"),
+        plot.caption = element_text(family="Ubuntu"))
 ```
-
-
-
-
-
-
 
 
 
