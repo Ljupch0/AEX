@@ -2,7 +2,7 @@
 title: "AEX Amsterdam Stock Index"
 output: 
   flexdashboard::flex_dashboard:
-    orientation: rows
+    orientation: columns
     vertical_layout: fill
 ---
 
@@ -102,27 +102,66 @@ rm(company_info)
 
 ```{r}
 invisible(getSymbols('^AEX'))
+
+
 ```
 
 
 
-
-
-
-
-
-Row
------------------------------------------------------------------------
-
-### Daily Volume
 
 ```{r}
-dygraph(AEX, main="AEX") %>%
-  dyRangeSelector() %>%
-  dyCandlestick()
+
+fivedays <- paste0(as.character(Sys.Date()-5),"/",as.character(Sys.Date()))
+sevendays <- paste0(as.character(Sys.Date()-5),"/",as.character(Sys.Date()))
+
+current_month <- paste0(as.character(cut(Sys.Date(), "month")),"/",as.character(Sys.Date()))
+
+last30days <- paste0(as.character(Sys.Date()-30),"/",as.character(Sys.Date()))
+
+
+
+closing_prices <- AEX$AEX.Close
+closing_2019 <- AEX$AEX.Close["2019"]
+closing_fivedays <- AEX$AEX.Close[fivedays]
+volume_fivedays <- AEX$AEX.Volume[fivedays]
+
+closing_last30days <- AEX$AEX.Close[last30days]
+volume_last30days <- AEX$AEX.Volume[last30days]
 ```
 
-Row {data-height=1300}
+
+
+
+Column {data-width=400}
+-----------------------------------------------------------------------
+
+### Closing points in the for the last 5 days
+
+```{r}
+dygraph(closing_last30days, main="AEX") %>%
+  dyRangeSelector()
+  
+```
+
+
+
+-----------------------------------------------------------------------
+
+### Closing points in the for the last 5 days
+
+```{r}
+dygraph(volume_last30days, main="AEX") %>%
+  dyRangeSelector() %>% 
+  dyBarChart()
+```
+
+
+
+
+
+
+
+Column {data-width=600}
 -----------------------------------------------------------------------
 
 ### Daily Performance by Index Component

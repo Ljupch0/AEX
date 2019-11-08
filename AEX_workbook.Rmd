@@ -197,6 +197,10 @@ dygraph(AEX, main="AEX") %>%
 
 
 
+```{r}
+library(DT)
+datatable(aex)
+```
 
 
 
