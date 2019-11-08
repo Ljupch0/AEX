@@ -15,6 +15,8 @@ library(treemapify)
 library(d3treeR)
 library(quantmod)
 library(dygraphs)
+library(DT)
+library(tools)
 
 
 date_converter <- function(date) {
@@ -57,7 +59,7 @@ style_widget <- function(hw=NULL, style="", addl_selector="") {
 
 ```{r}
 
-#Prices df
+#Prices df------------------------------------------
 aex <- read_html("https://finance.yahoo.com/quote/%5EAEX/components/")
 
 aex <- aex %>% 
@@ -75,8 +77,7 @@ names(aex)[5] <- "percent_change"
 aex$percent_change <- parse_number(aex$percent_change)
 aex$volume <- parse_number(aex$volume)
 
-#Company info df
-
+#Company info df------------------------------------
 company_info <- read_html("https://en.wikipedia.org/wiki/AEX_index")
 
 company_info <- company_info  %>% 
@@ -88,37 +89,36 @@ company_info <- company_info[[2]]
 names(company_info) <- tolower(names(company_info))
 names(company_info) <- sub(" ","_", names(company_info))
 company_info <- rename(company_info, index_weighting = `index_weighting (%)`, symbol = ticker_symbol)
+company_info$icb_sector<- toTitleCase(company_info$icb_sector)
 company_info <- company_info %>% 
   select(-company)
-
-company_info<- company_info %>% 
-  mutate(names_size=ifelse(index_weighting<2.5,"Small Cap",symbol))
 
 aex <- left_join(aex, company_info, by="symbol")
 rm(company_info)
 
-```
+aex <- aex %>% 
+  mutate(
+    symbol_percent = paste0(symbol," ", percent_change,"%"),
+    names_size=ifelse(index_weighting<2.5,"Small Cap",symbol_percent))
 
 
-```{r}
+
+#AEX time seris-------------------------------------
 invisible(getSymbols('^AEX'))
 
-
 ```
 
 
 
 
 ```{r}
-
+#Subsetting
 fivedays <- paste0(as.character(Sys.Date()-5),"/",as.character(Sys.Date()))
 sevendays <- paste0(as.character(Sys.Date()-5),"/",as.character(Sys.Date()))
 
 current_month <- paste0(as.character(cut(Sys.Date(), "month")),"/",as.character(Sys.Date()))
 
 last30days <- paste0(as.character(Sys.Date()-30),"/",as.character(Sys.Date()))
-
-
 
 closing_prices <- AEX$AEX.Close
 closing_2019 <- AEX$AEX.Close["2019"]
@@ -127,51 +127,26 @@ volume_fivedays <- AEX$AEX.Volume[fivedays]
 
 closing_last30days <- AEX$AEX.Close[last30days]
 volume_last30days <- AEX$AEX.Volume[last30days]
+
+
+aex_dt <- aex %>% 
+  select(symbol,company_name,last_price,percent_change,index_weighting, icb_sector)
 ```
 
 
 
 
-Column {data-width=400}
------------------------------------------------------------------------
-
-### Closing points in the for the last 5 days
-
-```{r}
-dygraph(closing_last30days, main="AEX") %>%
-  dyRangeSelector()
-  
-```
-
-
-
------------------------------------------------------------------------
-
-### Closing points in the for the last 5 days
-
-```{r}
-dygraph(volume_last30days, main="AEX") %>%
-  dyRangeSelector() %>% 
-  dyBarChart()
-```
-
-
-
-
-
-
-
-Column {data-width=600}
------------------------------------------------------------------------
-
+Column 
+-------------------------------------
+    
 ### Daily Performance by Index Component
-
+    
 ```{r}
 pdf(NULL)
 
 tree1<- treemap(
   dtf= aex,
-  index =c("names_size","symbol"),
+  index =c("names_size","symbol_percent"),
   vSize="index_weighting",
   vColor="percent_change",
   type="value",
@@ -182,9 +157,40 @@ tree1<- treemap(
   
 )
 style_widget(
-  d3tree3(tree1, rootname = paste("AEX Index Amsterdam - ", date_converter(Sys.Date()))),
+  d3tree3(tree1, rootname ="AEX"),
   addl_selector="text",
   style="font-family:Ubuntu; font-size:15px;"
 )
+```
+   
+Column {.tabset}
+-------------------------------------
+   
+### Top Gainers
+
+```{r}
+datatable(aex_dt,
+          extensions = 'Buttons',
+          options=list(order = list(list(3, 'desc')),
+                       paging = FALSE,
+                       dom = 'Bfrtip',
+                       buttons = c('copy', 'csv', 'excel', 'pdf', 'print')),
+          colnames = c("Ticker", "Company", "Last Price", "Percent Change","Index Weight","ICB Sector"),
+          fillContainer = TRUE,
+          rownames = FALSE)
+```   
+ 
+### Top Losers
+    
+```{r}
+datatable(aex_dt,
+          extensions = 'Buttons',
+          options=list(order = list(list(3, 'asc')),
+                       paging = FALSE,
+                       dom = 'Bfrtip',
+                       buttons = c('copy', 'csv', 'excel', 'pdf', 'print')),
+          colnames = c("Ticker", "Company", "Last Price", "Percent Change","Index Weight", "ICB Sector"),
+          fillContainer = TRUE,
+          rownames = FALSE)
 ```
 

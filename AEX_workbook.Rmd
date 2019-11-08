@@ -14,6 +14,7 @@ library(d3treeR)
 library(quantmod)
 library(dygraphs)
 library(DT)
+library(tools)
 
 date_converter <- function(date) {
   months <- c("January","February","March","April","May","June","July","August","September", "October","November","December")
@@ -60,12 +61,20 @@ company_info <- rename(company_info, index_weighting = `index_weighting (%)`, sy
 company_info <- company_info %>% 
   select(-company)
 
-company_info<- company_info %>% 
-  mutate(names_size=ifelse(index_weighting<2.5,"Small Cap",symbol))
-
+company_info$icb_sector<- toTitleCase(company_info$icb_sector)
 
 aex <- left_join(aex, company_info, by="symbol")
-rm(company_info)
+
+aex <- aex %>% 
+  mutate(
+    symbol_percent = paste0(symbol," ", percent_change,"%"),
+    names_size=ifelse(index_weighting<2.5,"Small Cap",symbol_percent))
+
+
+
+
+
+
 
 ```
 
@@ -74,7 +83,7 @@ Make color scheme with -100, +200 limit.
 ```{r}
 tree1<- treemap(
   dtf= aex,
-  index =c("names_size","symbol"),
+  index =c("names_size","symbol_percent"),
   vSize="index_weighting",
   vColor="percent_change",
   type="value",
@@ -198,15 +207,45 @@ dygraph(AEX, main="AEX") %>%
 
 
 ```{r}
-library(DT)
-datatable(aex)
+aex_dt <- aex %>% 
+  select(symbol,company_name,last_price,percent_change, icb_sector)
+
+
+#Top Gainers
+datatable(aex_dt,
+          options=list(order = list(list(3, 'desc'))),
+          fillContainer = TRUE,
+          rownames = FALSE)
+
+
+#Top Losers
+datatable(aex_dt,
+          options=list(order = list(list(3, 'asc'))),
+          fillContainer = TRUE,
+          rownames = FALSE)
 ```
 
 
 
 
 
+### Prices 30 days
 
+```{r}
+dygraph(closing_last30days, main="AEX") %>%
+  dyRangeSelector()
+  
+```
+
+-----------------------------------------------------------------------
+
+### Volume 30 days
+
+```{r}
+dygraph(volume_last30days, main="AEX") %>%
+  dyRangeSelector() %>% 
+  dyBarChart()
+```
 
 
 
