@@ -11,12 +11,11 @@ library(flexdashboard)
 library(tidyverse)
 library(rvest)
 library(treemap)
-library(treemapify)
 library(d3treeR)
 library(quantmod)
 library(dygraphs)
 library(DT)
-library(tools)
+library(tools) #try to remove with own function
 
 
 date_converter <- function(date) {
@@ -166,7 +165,7 @@ style_widget(
 Column {.tabset}
 -------------------------------------
    
-### Top Gainers
+### Top Daily Gainers
 
 ```{r}
 datatable(aex_dt,
@@ -174,13 +173,17 @@ datatable(aex_dt,
           options=list(order = list(list(3, 'desc')),
                        paging = FALSE,
                        dom = 'Bfrtip',
-                       buttons = c('copy', 'csv', 'excel', 'pdf', 'print')),
+                       buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
+                       info = FALSE),
           colnames = c("Ticker", "Company", "Last Price", "Percent Change","Index Weight","ICB Sector"),
           fillContainer = TRUE,
-          rownames = FALSE)
+          rownames = FALSE,
+          caption = htmltools::tags$caption(
+            style = 'caption-side: bottom; text-align: center;',
+            'Data source: finance.yahoo.com'))
 ```   
  
-### Top Losers
+### Top Daily Losers
     
 ```{r}
 datatable(aex_dt,
@@ -188,9 +191,13 @@ datatable(aex_dt,
           options=list(order = list(list(3, 'asc')),
                        paging = FALSE,
                        dom = 'Bfrtip',
-                       buttons = c('copy', 'csv', 'excel', 'pdf', 'print')),
+                       buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
+                       info = FALSE),
           colnames = c("Ticker", "Company", "Last Price", "Percent Change","Index Weight", "ICB Sector"),
           fillContainer = TRUE,
-          rownames = FALSE)
+          rownames = FALSE,
+          caption = htmltools::tags$caption(
+            style = 'caption-side: bottom; text-align: center;',
+            'Data source: finance.yahoo.com'))
 ```
 
