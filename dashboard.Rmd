@@ -3,7 +3,7 @@ title: "AEX Amsterdam Stock Index"
 output: 
   flexdashboard::flex_dashboard:
     orientation: columns
-    vertical_layout: fill
+    horizontal_layout: fill
 ---
 
 ```{r setup, include=FALSE}
@@ -16,6 +16,7 @@ library(quantmod)
 library(dygraphs)
 library(DT)
 library(tools) #try to remove with own function
+library(plotly)
 
 
 date_converter <- function(date) {
@@ -98,7 +99,7 @@ rm(company_info)
 aex <- aex %>% 
   mutate(
     symbol_percent = paste0(symbol," ", percent_change,"%"),
-    names_size=ifelse(index_weighting<2.5,"Small Cap",symbol_percent))
+    names_size=ifelse(index_weighting<2.5,"Smaller Cap",symbol_percent))
 
 
 
@@ -134,6 +135,80 @@ aex_dt <- aex %>%
 
 
 
+```{r}
+#valuebox data
+
+
+aex_close <- last(AEX$AEX.Close)[[1]]
+aex_open<- last(AEX$AEX.Open)[[1]]
+aex_close_before <- last(AEX$AEX.Close, n=2)[[1]]
+
+aex_close_round <- round(last(AEX$AEX.Close)[[1]], digits = 2)
+aex_open_round<- round(last(AEX$AEX.Open)[[1]],digits = 2)
+aex_high_round <- round(last(AEX$AEX.High)[[1]], digits = 2)
+aex_low_round <- round(last(AEX$AEX.Low)[[1]], digits = 2)
+
+
+aex_percent_open_today <- paste0(round((aex_close-aex_open)/aex_open*100, digits=2),"%")
+aex_percent_close_yesterday <- paste0(round((aex_close-aex_close_before)/aex_close_before*100, digits=2),"%")
+
+
+```
+
+Column {data-width=170}
+-------------------------------------
+    
+### Today's Index Closing Price
+    
+```{r}
+valueBox(aex_close_round, icon = "analytics")
+```
+
+### Change from Yesterday's Close
+    
+```{r}
+valueBox(aex_percent_close_yesterday, icon = "analytics", color = if ((aex_close-aex_close_before)/aex_close_before>0) {
+  "#00ba38"
+} else if ((aex_close-aex_close_before)/aex_close_before<0){
+  "#f8766d"
+} else {
+  "primary"
+} )
+
+
+```
+
+### Change from Today's Open
+    
+```{r}
+valueBox(aex_percent_open_today, icon = "analytics",color = if ((aex_close-aex_open)/aex_open>0) {
+  "#00ba38"
+} else if ((aex_close-aex_open)/aex_open<0) {
+  "#f8766d"
+} else {
+  "primary"
+} )
+```
+
+### Today's Open
+    
+```{r}
+valueBox(aex_open_round, icon = "analytics")
+```
+
+### Today's High 
+    
+```{r}
+valueBox(aex_high_round, icon = "analytics")
+```
+
+
+### Today's Low 
+    
+```{r}
+valueBox(aex_low_round, icon = "analytics")
+```
+
 
 Column 
 -------------------------------------
@@ -153,8 +228,8 @@ tree1<- treemap(
   palette =c("#590000","#b50a00","white","#00ba0c", "#035900"),
   mapping=c(-5, 0, 5),
   position.legend = "none"
-  
 )
+
 style_widget(
   d3tree3(tree1, rootname ="AEX"),
   addl_selector="text",
@@ -200,4 +275,41 @@ datatable(aex_dt,
             style = 'caption-side: bottom; text-align: center;',
             'Data source: finance.yahoo.com'))
 ```
+
+
+### Ranking Plot
+```{r fig.height=6, fig.width=5}
+aex <- aex %>% 
+  mutate(daily_gain_loss = ifelse(percent_change>0, "gain", "loss"))
+
+ggplot(aex, aes(reorder(symbol,percent_change, FUN = "identity"), percent_change))+
+  geom_bar(stat="identity", aes(fill=daily_gain_loss), show.legend = FALSE)+
+  geom_text(aes(label=paste0(percent_change,"%")),
+              hjust = ifelse(aex$percent_change>0,-0.1,1.1)) +
+  scale_fill_manual(values = c("#00ba38","#f8766d")) + 
+  scale_y_continuous(limits = c(min(aex$percent_change)-0.25, max(aex$percent_change)+0.25))+
+  coord_flip()+
+  theme_minimal()+
+  theme(
+    panel.grid.major.x =element_blank(),
+    panel.grid.minor.x =element_blank(),
+    axis.title.x=element_blank(),
+    axis.title.y=element_blank(),
+    axis.text.x=element_blank()
+  )
+```
+
+### Historical Index Data
+
+
+```{r}
+options(scipen=999)
+
+dygraph(AEX, main="AEX") %>%
+  dyRangeSelector() %>%
+  dyCandlestick() %>% 
+  dySeries("AEX.Close", axis = 'y2', stepPlot = TRUE) %>% 
+  dyHighlight(highlightCircleSize = 5, highlightSeriesBackgroundAlpha = 0.3)
+```
+
 

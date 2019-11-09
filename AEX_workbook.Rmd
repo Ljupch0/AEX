@@ -249,6 +249,26 @@ dygraph(volume_last30days, main="AEX") %>%
 
 
 
+```{r fig.height=7, fig.width=5}
+aex <- aex %>% 
+  mutate(daily_gain_loss = ifelse(percent_change>0, "gain", "loss"))
+
+ggplot(aex, aes(reorder(symbol,percent_change, FFUN = "identity"), percent_change))+
+  geom_bar(stat="identity", aes(fill=daily_gain_loss), show.legend = FALSE)+
+  geom_text(aes(label=paste0(percent_change,"%")),
+              hjust = ifelse(aex$percent_change>0,-0.1,1.1)) +
+  scale_fill_manual(values = c("#00ba38","#f8766d")) + 
+  scale_y_continuous(limits = c(min(aex$percent_change)-0.25, max(aex$percent_change)+0.25))+
+  coord_flip()+
+  theme_minimal()+
+  theme(
+    panel.grid.major.x =element_blank(),
+    panel.grid.minor.x =element_blank(),
+    axis.title.x=element_blank(),
+    axis.title.y=element_blank(),
+    axis.text.x=element_blank()
+  )
+```
 
 
 
