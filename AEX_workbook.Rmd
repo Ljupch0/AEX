@@ -272,5 +272,74 @@ ggplot(aex, aes(reorder(symbol,percent_change, FFUN = "identity"), percent_chang
 
 
 
+```{r}
+dygraph(stocks, main = "AAPL and MSFT Closing Price 1st Jan - 30th Nov 2018") %>%
+  dySeries("MSFT.Close", axis = "y2") %>% 
+  dyAxis("y", 
+         label = "AAPL") %>%
+  dyAxis("y2", 
+         label = "MSFT",
+         valueRange = c(80, 120),
+         independentTicks = TRUE) %>%
+  dyRangeSelector(dateWindow = c("2018-01-01", "2018-11-30")) %>%
+  dyRoller()
+```
+
+
+```{r}
+lungDeaths <- cbind(mdeaths, fdeaths)
+dygraph(lungDeaths) %>%
+  dyBarSeries('fdeaths') %>% 
+  dyFilledLine('mdeaths') %>% 
+  dyRangeSelector()
+  
+```
+
+```{r}
+dygraph(lungDeaths) %>%
+  dySeries("mdeaths", label = "Male") %>%
+  dySeries("fdeaths", label = "Female") %>%
+  dyOptions(stackedGraph = TRUE) %>%
+  dyRangeSelector(height = 20)
+```
+
+
+
+
+```{r}
+AEX_close_volume <- AEX[,c("AEX.Close", "AEX.Volume")]
+
+dygraph(AEX_close_volume, main="AEX") %>%
+  dySeries("AEX.Close", axis="y2") %>% 
+  dyBarSeries("AEX.Volume", axis="y") %>% 
+  dyHighlight(highlightCircleSize = 5, highlightSeriesBackgroundAlpha = 0.3)
+
+```
+
+
+```{r}
+lungDeaths <- cbind(mdeaths, fdeaths)
+dygraph(lungDeaths) %>%
+  dyRangeSelector() %>%
+  dyMultiColumn()
+```
+
+
+```{r}
+lungDeaths <- cbind(mdeaths, fdeaths, ldeaths)
+dygraph(lungDeaths) %>%
+  dyStackedBarGroup(c('ldeaths', 'mdeaths'))
+```
+
+
+```{r}
+lungDeaths <- cbind(mdeaths, fdeaths)
+dygraph(lungDeaths) %>%
+  dyRangeSelector() %>%
+  dyBarSeries('fdeaths') %>% 
+  dyFilledLine('mdeaths')
+```
+
+
 
 

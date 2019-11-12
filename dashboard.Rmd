@@ -305,11 +305,13 @@ ggplot(aex, aes(reorder(symbol,percent_change, FUN = "identity"), percent_change
 ```{r}
 options(scipen=999)
 
+
 dygraph(AEX, main="AEX") %>%
   dyRangeSelector() %>%
   dyCandlestick() %>% 
-  dySeries("AEX.Close", axis = 'y2', stepPlot = TRUE) %>% 
+  dySeries("AEX.Close", axis = 'y2') %>% 
   dyHighlight(highlightCircleSize = 5, highlightSeriesBackgroundAlpha = 0.3)
 ```
+
 
 
