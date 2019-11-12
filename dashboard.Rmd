@@ -4,6 +4,8 @@ output:
   flexdashboard::flex_dashboard:
     orientation: columns
     horizontal_layout: fill
+editor_options: 
+  chunk_output_type: inline
 ---
 
 ```{r setup, include=FALSE}
@@ -109,28 +111,42 @@ invisible(getSymbols('^AEX'))
 ```
 
 
+```{r}
+daily_AEX <- read_html("https://tradingeconomics.com/netherlands/stock-market") %>% 
+  html_nodes("table") %>% 
+  html_table(fill=TRUE)
+
+aex_current <- daily_AEX[[4]][1,2]
+aex_previous <- daily_AEX[[4]][1,3]
+aex_change_day_prc <- daily_AEX[[2]][1,6]
+aex_change_year_prc <- daily_AEX[[2]][1,7]
+
+
+```
+
+
 
 
 ```{r}
-#Subsetting
-fivedays <- paste0(as.character(Sys.Date()-5),"/",as.character(Sys.Date()))
-sevendays <- paste0(as.character(Sys.Date()-5),"/",as.character(Sys.Date()))
-
-current_month <- paste0(as.character(cut(Sys.Date(), "month")),"/",as.character(Sys.Date()))
-
-last30days <- paste0(as.character(Sys.Date()-30),"/",as.character(Sys.Date()))
-
-closing_prices <- AEX$AEX.Close
-closing_2019 <- AEX$AEX.Close["2019"]
-closing_fivedays <- AEX$AEX.Close[fivedays]
-volume_fivedays <- AEX$AEX.Volume[fivedays]
-
-closing_last30days <- AEX$AEX.Close[last30days]
-volume_last30days <- AEX$AEX.Volume[last30days]
-
-
-aex_dt <- aex %>% 
-  select(symbol,company_name,last_price,percent_change,index_weighting, icb_sector)
+# #Subsetting
+# fivedays <- paste0(as.character(Sys.Date()-5),"/",as.character(Sys.Date()))
+# sevendays <- paste0(as.character(Sys.Date()-5),"/",as.character(Sys.Date()))
+# 
+# current_month <- paste0(as.character(cut(Sys.Date(), "month")),"/",as.character(Sys.Date()))
+# 
+# last30days <- paste0(as.character(Sys.Date()-30),"/",as.character(Sys.Date()))
+# 
+# closing_prices <- AEX$AEX.Close
+# closing_2019 <- AEX$AEX.Close["2019"]
+# closing_fivedays <- AEX$AEX.Close[fivedays]
+# volume_fivedays <- AEX$AEX.Volume[fivedays]
+# 
+# closing_last30days <- AEX$AEX.Close[last30days]
+# volume_last30days <- AEX$AEX.Volume[last30days]
+# 
+# 
+ aex_dt <- aex %>% 
+   select(symbol,company_name,last_price,percent_change,index_weighting, icb_sector)
 ```
 
 
@@ -139,18 +155,18 @@ aex_dt <- aex %>%
 #valuebox data
 
 
-aex_close <- last(AEX$AEX.Close)[[1]]
-aex_open<- last(AEX$AEX.Open)[[1]]
-aex_close_before <- last(AEX$AEX.Close, n=2)[[1]]
-
-aex_close_round <- round(last(AEX$AEX.Close)[[1]], digits = 2)
-aex_open_round<- round(last(AEX$AEX.Open)[[1]],digits = 2)
-aex_high_round <- round(last(AEX$AEX.High)[[1]], digits = 2)
-aex_low_round <- round(last(AEX$AEX.Low)[[1]], digits = 2)
-
-
-aex_percent_open_today <- paste0(round((aex_close-aex_open)/aex_open*100, digits=2),"%")
-aex_percent_close_yesterday <- paste0(round((aex_close-aex_close_before)/aex_close_before*100, digits=2),"%")
+# aex_close <- last(AEX$AEX.Close)[[1]]
+# aex_open<- last(AEX$AEX.Open)[[1]]
+# aex_close_before <- last(AEX$AEX.Close, n=2)[[1]]
+# 
+# aex_close_round <- round(last(AEX$AEX.Close)[[1]], digits = 2)
+# aex_open_round<- round(last(AEX$AEX.Open)[[1]],digits = 2)
+# aex_high_round <- round(last(AEX$AEX.High)[[1]], digits = 2)
+# aex_low_round <- round(last(AEX$AEX.Low)[[1]], digits = 2)
+# 
+# 
+# aex_percent_open_today <- paste0(round((aex_close-aex_open)/aex_open*100, digits=2),"%")
+# aex_percent_close_yesterday <- paste0(round((aex_close-aex_close_before)/aex_close_before*100, digits=2),"%")
 
 
 ```
@@ -158,18 +174,18 @@ aex_percent_close_yesterday <- paste0(round((aex_close-aex_close_before)/aex_clo
 Column {data-width=170}
 -------------------------------------
     
-### Today's Index Closing Price
+### Current Index Points
     
 ```{r}
-valueBox(aex_close_round, icon = "analytics")
+valueBox(aex_current, icon = "analytics")
 ```
 
-### Change from Yesterday's Close
+### Change from Previous Close
     
 ```{r}
-valueBox(aex_percent_close_yesterday, icon = "analytics", color = if ((aex_close-aex_close_before)/aex_close_before>0) {
+valueBox(aex_change_day_prc, icon = "analytics", color = if (parse_number(aex_change_day_prc)>0) {
   "#00ba38"
-} else if ((aex_close-aex_close_before)/aex_close_before<0){
+} else if (parse_number(aex_change_day_prc)<0){
   "#f8766d"
 } else {
   "primary"
@@ -178,36 +194,24 @@ valueBox(aex_percent_close_yesterday, icon = "analytics", color = if ((aex_close
 
 ```
 
-### Change from Today's Open
+### YTD Change
     
 ```{r}
-valueBox(aex_percent_open_today, icon = "analytics",color = if ((aex_close-aex_open)/aex_open>0) {
+valueBox(aex_change_year_prc, icon = "analytics",color = if (parse_number(aex_change_year_prc)>0) {
   "#00ba38"
-} else if ((aex_close-aex_open)/aex_open<0) {
+} else if (parse_number(aex_change_year_prc)<0) {
   "#f8766d"
 } else {
   "primary"
 } )
 ```
 
-### Today's Open
+### Previous Close
     
 ```{r}
-valueBox(aex_open_round, icon = "analytics")
+valueBox(aex_previous, icon = "analytics")
 ```
 
-### Today's High 
-    
-```{r}
-valueBox(aex_high_round, icon = "analytics")
-```
-
-
-### Today's Low 
-    
-```{r}
-valueBox(aex_low_round, icon = "analytics")
-```
 
 
 Column 
