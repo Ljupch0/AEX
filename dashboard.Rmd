@@ -103,7 +103,7 @@ aex <- aex %>%
 
 
 
-#AEX time seris-------------------------------------
+#AEX time series-------------------------------------
 invisible(getSymbols('^AEX'))
 
 ```
