@@ -343,3 +343,14 @@ dygraph(lungDeaths) %>%
 
 
 
+```{r}
+aex_daily <- read_html("https://finance.yahoo.com/quote/%5EAEX?p=%5EAEX")
+
+aex_daily <- aex_daily %>% 
+  html_nodes("table") %>% 
+  html_table()
+
+aex_daily[[1]][1,2]
+```
+
+

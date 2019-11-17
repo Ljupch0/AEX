@@ -4,12 +4,12 @@ output:
   flexdashboard::flex_dashboard:
     orientation: columns
     horizontal_layout: fill
-editor_options: 
-  chunk_output_type: inline
+    runtime: shiny
 ---
 
-```{r setup, include=FALSE}
+```{r global, include=FALSE}
 library(flexdashboard)
+library(shiny)
 library(tidyverse)
 library(rvest)
 library(treemap)
@@ -69,11 +69,7 @@ theme_ljupcho <- function() {
   )
 }
 
-```
 
-
-
-```{r}
 
 #Prices df------------------------------------------
 aex <- read_html("https://finance.yahoo.com/quote/%5EAEX/components/")
@@ -122,10 +118,6 @@ aex <- aex %>%
 #AEX time seris-------------------------------------
 invisible(getSymbols('^AEX'))
 
-```
-
-
-```{r}
 daily_AEX <- read_html("https://tradingeconomics.com/netherlands/stock-market") %>% 
   html_nodes("table") %>% 
   html_table(fill=TRUE)
@@ -135,13 +127,6 @@ aex_previous <- daily_AEX[[4]][1,3]
 aex_change_day_prc <- daily_AEX[[2]][1,6]
 aex_change_year_prc <- daily_AEX[[2]][1,7]
 
-
-```
-
-
-
-
-```{r}
 # #Subsetting
 # fivedays <- paste0(as.character(Sys.Date()-5),"/",as.character(Sys.Date()))
 # sevendays <- paste0(as.character(Sys.Date()-5),"/",as.character(Sys.Date()))
@@ -161,11 +146,7 @@ aex_change_year_prc <- daily_AEX[[2]][1,7]
 # 
  aex_dt <- aex %>% 
    select(symbol,company_name,last_price,percent_change,index_weighting, icb_sector)
-```
 
-
-
-```{r}
 #valuebox data
 
 
@@ -181,6 +162,10 @@ aex_change_year_prc <- daily_AEX[[2]][1,7]
 # 
 # aex_percent_open_today <- paste0(round((aex_close-aex_open)/aex_open*100, digits=2),"%")
 # aex_percent_close_yesterday <- paste0(round((aex_close-aex_close_before)/aex_close_before*100, digits=2),"%")
+ 
+aex <- aex %>% 
+  mutate(daily_gain_loss = ifelse(percent_change>0, "gain", "loss"))
+
 
 
 ```
@@ -191,12 +176,15 @@ Column {data-width=175}
 ### Current Index Points
     
 ```{r}
-valueBox(aex_current, icon = "analytics")
+renderValueBox({
+  valueBox(aex_current, icon = "analytics")
+})
 ```
 
 ### Change from Previous Close
     
 ```{r}
+renderValueBox({
 valueBox(aex_change_day_prc, icon = "analytics", color = if (parse_number(aex_change_day_prc)>0) {
   "#00ba38"
 } else if (parse_number(aex_change_day_prc)<0){
@@ -205,12 +193,15 @@ valueBox(aex_change_day_prc, icon = "analytics", color = if (parse_number(aex_ch
   "primary"
 } )
 
+})
+
 
 ```
 
 ### YTD Change
     
 ```{r}
+renderValueBox({
 valueBox(aex_change_year_prc, icon = "analytics",color = if (parse_number(aex_change_year_prc)>0) {
   "#00ba38"
 } else if (parse_number(aex_change_year_prc)<0) {
@@ -218,12 +209,16 @@ valueBox(aex_change_year_prc, icon = "analytics",color = if (parse_number(aex_ch
 } else {
   "primary"
 } )
+  
+})
 ```
 
 ### Previous Close
     
 ```{r}
+renderValueBox({
 valueBox(aex_previous, icon = "analytics")
+})
 ```
 
 
@@ -248,11 +243,13 @@ tree1<- treemap(
   position.legend = "none"
 )
 
+renderD3tree3({
 style_widget(
   d3tree3(tree1, rootname ="AEX"),
   addl_selector="text",
   style="font-family:Ubuntu; font-size:15px;"
 )
+})
 ```
    
 Column {.tabset .tabset-fade}
@@ -261,6 +258,7 @@ Column {.tabset .tabset-fade}
 ### Top Daily Gainers
 
 ```{r}
+renderDataTable({
 datatable(aex_dt,
           extensions = 'Buttons',
           options=list(order = list(list(3, 'desc')),
@@ -274,11 +272,13 @@ datatable(aex_dt,
           caption = htmltools::tags$caption(
             style = 'caption-side: bottom; text-align: center;',
             'Data source: finance.yahoo.com'))
+})
 ```   
  
 ### Top Daily Losers
     
 ```{r}
+renderDataTable({
 datatable(aex_dt,
           extensions = 'Buttons',
           options=list(order = list(list(3, 'asc')),
@@ -292,14 +292,14 @@ datatable(aex_dt,
           caption = htmltools::tags$caption(
             style = 'caption-side: bottom; text-align: center;',
             'Data source: finance.yahoo.com'))
+})
 ```
 
 
 ### Ranking Plot
 ```{r fig.height=6, fig.width=5}
-aex <- aex %>% 
-  mutate(daily_gain_loss = ifelse(percent_change>0, "gain", "loss"))
 
+renderPlot({
 ggplot(aex, aes(reorder(symbol,percent_change, FUN = "identity"), percent_change))+
   geom_bar(stat="identity", aes(fill=daily_gain_loss), show.legend = FALSE)+
   geom_text(aes(label=paste0(percent_change,"%"),
@@ -309,6 +309,7 @@ ggplot(aex, aes(reorder(symbol,percent_change, FUN = "identity"), percent_change
   scale_y_continuous(limits = c(min(aex$percent_change)-0.25, max(aex$percent_change)+0.25))+
   coord_flip()+
   theme_ljupcho()
+})
   
 ```
 
@@ -318,12 +319,13 @@ ggplot(aex, aes(reorder(symbol,percent_change, FUN = "identity"), percent_change
 ```{r}
 options(scipen=999)
 
-
+renderDygraph({
 dygraph(AEX, main="AEX") %>%
   dyRangeSelector() %>%
   dyCandlestick() %>% 
   dySeries("AEX.Close", axis = 'y2') %>% 
   dyHighlight(highlightCircleSize = 5, highlightSeriesBackgroundAlpha = 0.3)
+})
 ```
 
 
