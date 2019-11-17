@@ -154,9 +154,11 @@ ui <- dashboardPage(
         column(6, d3tree3Output("treemap", height = "620px")),
         
         
-      tabBox(height = 600,
-          tabPanel("Top Daily Gainers", DTOutput("dt_gainers")),
-          tabPanel("Top Daily Losers", DTOutput("dt_losers")),
+      tabBox(height = "600px",
+          tabPanel("Top Daily Gainers", DTOutput("dt_gainers"),
+                   style = "height:550px; overflow-y: scroll;"),
+          tabPanel("Top Daily Losers", DTOutput("dt_losers"),
+                   style = "height:550px; overflow-y: scroll;"),
           tabPanel("Ranking Plot"),
           tabPanel("Historical Index Data")
         )
@@ -225,28 +227,25 @@ server <- function(input, output) {
                            paging = FALSE,
                            dom = 'Bfrtip',
                            buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
-                           #pageLength = 7,
-                           info = FALSE,
-                           scrollCollapse=FALSE),
+                           pageLength = 7,
+                           info = FALSE),
               colnames = c("Ticker", "Company", "Last Price", "Percent Change","Index Weight","ICB Sector"),
-              fillContainer = TRUE,
               rownames = FALSE,
               caption = htmltools::tags$caption(
                 style = 'caption-side: bottom; text-align: center;',
                 'Data source: finance.yahoo.com'))
   )
   
+  
   output$dt_losers <- renderDT(
     datatable(aex_dt,
               extensions = 'Buttons',
               options=list(order = list(list(3, 'asc')),
-                           paging = TRUE,
+                           paging = FALSE,
                            dom = 'Bfrtip',
                            buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
-                           info = FALSE,
-                           pageLength = 7),
+                           info = FALSE),
               colnames = c("Ticker", "Company", "Last Price", "Percent Change","Index Weight", "ICB Sector"),
-              #fillContainer = TRUE,
               rownames = FALSE,
               caption = htmltools::tags$caption(
                 style = 'caption-side: bottom; text-align: center;',
