@@ -177,45 +177,55 @@ server <- function(input, output) {
   
   output$aex_current <- renderUI(
     valueBox(
-      aex_current, "Current Index", width=2, color="light-blue"
+      aex_current, "Current Index", width=2, color="light-blue", icon=icon("chart-bar")
     )
   )
   
   output$aex_previous_close <- renderUI(
     valueBox(
-      aex_previous, "Previous Close", width=2, color="light-blue")
+      aex_previous, "Previous Close", width=2, color="light-blue", icon=icon("angle-left"))
   )
   
   output$aex_change_day <- renderUI(
     valueBox(
-      aex_change_day, "Change from Prev. Close", width=2, color = if (parse_number(aex_change_day)>0) {
+      aex_change_day, "Change from Prev. Close", width=2,
+      color = if (parse_number(aex_change_day)>0) {
         "green"
-      } else if (parse_number(aex_change_day)<0){
-        "red"
       } else {
-        "primary"
-      })
+        "red"
+      },
+      icon = if (parse_number(aex_change_day)>0) {
+        icon("arrow-up")
+      } else {
+        icon("arrow-down")
+      } 
+        )
     )
   
   output$aex_change_year <- renderUI(
     valueBox(
-      aex_change_year,"YTD Change", width=2, color = if (parse_number(aex_change_year)>0) {
+      aex_change_year,"YTD Change", width=2,
+      color = if (parse_number(aex_change_year)>0) {
         "green"
-      } else if (parse_number(aex_change_year)<0) {
-        "red"
       } else {
-        "primary"
-      })
+        "red"
+      },
+      icon = if (parse_number(aex_change_year)>0) {
+        icon("arrow-up")
+      } else {
+        icon("arrow-down")
+      }
+      )
   )
   
   output$aex_min <- renderUI(
     valueBox(
-      aex_min,"Daily Minimum", width=2, color = "light-blue")
+      aex_min,"Daily Minimum", width=2, color = "light-blue", icon=icon("caret-down"))
   )
   
   output$aex_max <- renderUI(
     valueBox(
-      aex_max,"Daily Maximum", width=2, color="light-blue")
+      aex_max,"Daily Maximum", width=2, color="light-blue", icon=icon("caret-up"))
   )
   
   output$treemap <- renderD3tree3(
