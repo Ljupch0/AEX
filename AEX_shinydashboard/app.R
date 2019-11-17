@@ -73,6 +73,8 @@ daily_AEX2 <- daily_AEX2 %>%
   html_nodes("table") %>% 
   html_table()
 
+daily_range <- strsplit(daily_AEX2[[2]][1,2], split=' - ', fixed=TRUE)
+
 
 names(aex) <- tolower(names(aex))
 names(aex) <- sub(" ","_", names(aex))
@@ -115,15 +117,15 @@ daily_AEX <- read_html("https://tradingeconomics.com/netherlands/stock-market") 
   html_table(fill=TRUE)
 
 aex_current <- daily_AEX[[4]][1,2]
-aex_previous <- aex_daily[[1]][1,2]
+aex_previous <- daily_AEX2[[1]][1,2]
 aex_change_day <- daily_AEX[[2]][1,6]
 aex_change_year <- daily_AEX[[2]][1,7]
+aex_min <- daily_range[[1]][1]
+aex_max <- daily_range[[1]][2]
+
 
 aex_dt <- aex %>% 
   select(symbol,company_name,last_price,percent_change,index_weighting, icb_sector)
-
-
-#pdf(NULL)
 
 tree1<- treemap(
   dtf= aex,
@@ -137,6 +139,9 @@ tree1<- treemap(
   #position.legend = "none"
 )
 
+#for ranking plot coloring:
+aex <- aex %>% 
+  mutate(daily_gain_loss = ifelse(percent_change>0, "gain", "loss"))
 
 #############_END_DATA_PROCESSSING_#################
 
@@ -148,7 +153,9 @@ ui <- dashboardPage(
         uiOutput("aex_current"),
         uiOutput("aex_previous_close"),
         uiOutput("aex_change_day"),
-        uiOutput("aex_change_year")
+        uiOutput("aex_change_year"),
+        uiOutput("aex_min"),
+        uiOutput("aex_max")
       ),
       fluidRow(
         column(6, d3tree3Output("treemap", height = "620px")),
@@ -156,24 +163,13 @@ ui <- dashboardPage(
         
       tabBox(height = "600px",
           tabPanel("Top Daily Gainers", DTOutput("dt_gainers"),
-                   style = "height:550px; overflow-y: scroll;"),
+                   style = "height:530px; overflow-y: scroll;"),
           tabPanel("Top Daily Losers", DTOutput("dt_losers"),
-                   style = "height:550px; overflow-y: scroll;"),
-          tabPanel("Ranking Plot"),
-          tabPanel("Historical Index Data")
+                   style = "height:530px; overflow-y: scroll;"),
+          tabPanel("Ranking Plot", plotOutput("ranking_plot")),
+          tabPanel("Historical Index Data", dygraphOutput("historical", height = "535px"))
         )
       )
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
     )
 )
 
@@ -181,18 +177,18 @@ server <- function(input, output) {
   
   output$aex_current <- renderUI(
     valueBox(
-      aex_current, "Current Index", width=3, color="light-blue"
+      aex_current, "Current Index", width=2, color="light-blue"
     )
   )
   
   output$aex_previous_close <- renderUI(
     valueBox(
-      aex_previous, "Previous Close", width=3, color="light-blue")
+      aex_previous, "Previous Close", width=2, color="light-blue")
   )
   
   output$aex_change_day <- renderUI(
     valueBox(
-      aex_change_day, "Change from Previous Close", width=3, color = if (parse_number(aex_change_day)>0) {
+      aex_change_day, "Change from Prev. Close", width=2, color = if (parse_number(aex_change_day)>0) {
         "green"
       } else if (parse_number(aex_change_day)<0){
         "red"
@@ -203,13 +199,23 @@ server <- function(input, output) {
   
   output$aex_change_year <- renderUI(
     valueBox(
-      aex_change_year,"YTD Change", width=3, color = if (parse_number(aex_change_year)>0) {
+      aex_change_year,"YTD Change", width=2, color = if (parse_number(aex_change_year)>0) {
         "green"
       } else if (parse_number(aex_change_year)<0) {
         "red"
       } else {
         "primary"
       })
+  )
+  
+  output$aex_min <- renderUI(
+    valueBox(
+      aex_min,"Daily Minimum", width=2, color = "light-blue")
+  )
+  
+  output$aex_max <- renderUI(
+    valueBox(
+      aex_max,"Daily Maximum", width=2, color="light-blue")
   )
   
   output$treemap <- renderD3tree3(
@@ -251,6 +257,26 @@ server <- function(input, output) {
                 style = 'caption-side: bottom; text-align: center;',
                 'Data source: finance.yahoo.com'))
   )
+  
+  output$ranking_plot <- renderPlot({
+    ggplot(aex, aes(reorder(symbol,percent_change, FUN = "identity"), percent_change))+
+      geom_bar(stat="identity", aes(fill=daily_gain_loss), show.legend = FALSE)+
+      geom_text(aes(label=paste0(percent_change,"%"),
+                    hjust = ifelse(aex$percent_change>0,-0.1,1.1))
+      )+
+      scale_fill_manual(values = c("#00ba38","#f8766d")) + 
+      scale_y_continuous(limits = c(min(aex$percent_change)-0.25, max(aex$percent_change)+0.25))+
+      coord_flip()+
+      theme_ljupcho()}, height = 540
+  )
+  
+  output$historical <- renderDygraph({
+    dygraph(AEX, main="AEX") %>%
+      dyRangeSelector() %>%
+      dyCandlestick() %>% 
+      dySeries("AEX.Close", axis = 'y2') %>% 
+      dyHighlight(highlightCircleSize = 5, highlightSeriesBackgroundAlpha = 0.3)
+  })
 
 }
 

@@ -344,13 +344,22 @@ dygraph(lungDeaths) %>%
 
 
 ```{r}
-aex_daily <- read_html("https://finance.yahoo.com/quote/%5EAEX?p=%5EAEX")
 
-aex_daily <- aex_daily %>% 
+daily_AEX2 <- read_html("https://finance.yahoo.com/quote/%5EAEX?p=%5EAEX")
+
+daily_AEX2 <- daily_AEX2 %>% 
   html_nodes("table") %>% 
   html_table()
 
-aex_daily[[1]][1,2]
+
+
+daily_range <- strsplit(daily_AEX2[[2]][1,2], split=' - ', fixed=TRUE)
+aex_min<- daily_range[[1]][1]
+aex_max<- daily_range[[1]][2]
 ```
 
+
+
+```{r}
+daily```
 
